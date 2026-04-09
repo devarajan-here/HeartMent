@@ -84,7 +84,7 @@ Your current mode is: ${session.mode}`;
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            username: session.username || "User", 
+            username: session.userName || session.username || "User", 
             sessionId: session.id, 
             role: 'User', 
             content: lastUserMsg.content 
@@ -96,7 +96,7 @@ Your current mode is: ${session.mode}`;
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            username: session.username || "User", 
+            username: session.userName || session.username || "User", 
             sessionId: session.id, 
             role: 'HeartMend', 
             content: aiResponseText 

@@ -16,6 +16,7 @@ export interface SessionData {
   need: string;
   mode: Mode;
   language?: string;
+  userName?: string;
   createdAt: number;
 }
 

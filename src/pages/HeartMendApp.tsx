@@ -26,6 +26,7 @@ const HeartMendApp = () => {
   }, [location.search]);
   
   // Form state
+  const [userName, setUserName] = useState('');
   const [partnerName, setPartnerName] = useState('');
   const [duration, setDuration] = useState('');
   const [whoEnded, setWhoEnded] = useState('We mutually agreed');
@@ -42,7 +43,7 @@ const HeartMendApp = () => {
   const startSession = (e: React.FormEvent) => {
     e.preventDefault();
     const sessionId = addSession({
-      partnerName, duration, whoEnded, story, feeling, need: 'Support', mode, language
+      partnerName, duration, whoEnded, story, feeling, need: 'Support', mode, language, userName
     });
     setActiveSessionId(sessionId);
     
@@ -50,7 +51,7 @@ const HeartMendApp = () => {
     addMessage({
       sessionId,
       role: 'assistant',
-      content: `Hi friend. Look, I heard what happened with ${partnerName}. It seriously sucks that you're feeling ${feeling} after ${duration} together. But honestly, my creator (the boss) built me because he went through a completely miserable heartbreak of his own... so I literally exist for this exact moment. Grab a seat, let's talk about it.`
+      content: `Hi ${userName || 'friend'}. Look, I heard what happened with ${partnerName}. It seriously sucks that you're feeling ${feeling} after ${duration} together. But honestly, my creator (the boss) built me because he went through a completely miserable heartbreak of his own... so I literally exist for this exact moment. Grab a seat, let's talk about it.`
     });
   };
 
@@ -84,6 +85,10 @@ const HeartMendApp = () => {
           <h2 className="text-center" style={{ marginBottom: '2rem' }}>Tell me a little about what happened.</h2>
           <form onSubmit={startSession} className="flex-col">
             <div className="grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label>What is your name?</label>
+                <input required className="input-field" value={userName} onChange={e => setUserName(e.target.value)} placeholder="e.g. John" />
+              </div>
               <div>
                 <label>Partner's Name</label>
                 <input required className="input-field" value={partnerName} onChange={e => setPartnerName(e.target.value)} placeholder="e.g. Alex" />
