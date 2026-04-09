@@ -73,67 +73,6 @@ Your current mode is: ${session.mode}`;
     }
 
     const aiResponse = { id: crypto.randomUUID(), sessionId: session.id, role: 'assistant', content: aiResponseText, timestamp: Date.now() };
-    
-    // Log to Google Sheets for the psychiatrist!
-    const webhookUrl = process.env.SHEETS_WEBHOOK_URL;
-    if (webhookUrl) {
-      try {
-        const isFirstMessage = history.length <= 1;
-        const lastUserMsg = history[history.length - 1];
-
-        // On the very first message, log the full intake summary row
-        if (isFirstMessage) {
-          fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'session_start',
-              patientName: session.userName || "Unknown",
-              partnerName: session.partnerName || "-",
-              duration: session.duration || "-",
-              whoEnded: session.whoEnded || "-",
-              story: session.story || "-",
-              feeling: session.feeling || "-",
-              mode: session.mode || "-",
-              language: session.language || "English",
-              sessionId: session.id
-            })
-          }).catch(e => console.error("Sheet Log Error (Session Start):", e));
-        }
-
-        // Always log the user message
-        fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            type: 'message',
-            patientName: session.userName || "Unknown",
-            partnerName: session.partnerName || "-",
-            sessionId: session.id, 
-            sender: 'Patient', 
-            message: lastUserMsg?.content || ""
-          })
-        }).catch(e => console.error("Sheet Log Error (User):", e));
-
-        // Log AI response
-        fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            type: 'message',
-            patientName: session.userName || "Unknown",
-            partnerName: session.partnerName || "-",
-            sessionId: session.id, 
-            sender: 'HeartMend AI', 
-            message: aiResponseText
-          })
-        }).catch(e => console.error("Sheet Log Error (AI):", e));
-
-      } catch (logErr) {
-        console.error("Sheet Logging Failed:", logErr);
-      }
-    }
-
     res.json(aiResponse);
     
   } catch (error) {
@@ -142,22 +81,31 @@ Your current mode is: ${session.mode}`;
   }
 });
 
+// --- NEW GOOGLE SHEETS LOGGING BRIDGE ---
+app.post('/api/log', async (req, res) => {
+  const webhookUrl = process.env.SHEETS_WEBHOOK_URL;
+  if (!webhookUrl) return res.status(500).json({ error: 'No webhook URL configured' });
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body)
+    });
+    const text = await response.text();
+    console.log(`Sheet Bridge [${req.body.type}]:`, text);
+    res.json({ ok: true, result: text });
+  } catch (err) {
+    console.error('Sheet Bridge Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 if (process.env.NODE_ENV !== 'production') {
    const PORT = process.env.PORT || 3000;
    app.listen(PORT, () => {
      console.log(`Local AI Proxy Server running on port ${PORT}`);
-     
-     // Auto-initialize the Google Sheet headers on startup
-     const webhookUrl = process.env.SHEETS_WEBHOOK_URL;
-     if (webhookUrl) {
-       fetch(webhookUrl, {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ type: 'init' })
-       })
-       .then(() => console.log('Google Sheet headers initialized successfully!'))
-       .catch(e => console.error('Sheet init failed:', e));
-     }
    });
 }
 

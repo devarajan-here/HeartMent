@@ -11,11 +11,7 @@ const HeartMendApp = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!currentUser) {
-       navigate('/login');
-    }
-  }, [currentUser, navigate]);
+  // Simplified: No longer checking for currentUser as we stay stateless and collect name in intake
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -159,7 +155,7 @@ const HeartMendApp = () => {
             <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>HeartMend</h3>
             <span style={{ fontSize: '0.8rem', color: 'var(--accent-color)' }}>Current Mode: {mode}</span>
           </div>
-          <button onClick={() => navigate('/dashboard')} className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>Exit to Dashboard</button>
+          <button onClick={() => navigate('/')} className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>Exit Session</button>
         </div>
 
         {/* Chat Area */}

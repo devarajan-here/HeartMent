@@ -76,7 +76,7 @@ const Admin = () => {
             Use this database to review transcripts, monitor patient progress, and plan clinical interventions.
           </p>
           <a 
-            href="https://docs.google.com/spreadsheets/d/e/2PACX-1vTQ4xOh5a-57777jwwGJTDHYrCLAvEx9xisg7bWAkT8gmx0eMLA5jxNaJJ7fWyGyWrKoSQR-cjHUA8o/pubhtml" 
+            href="https://docs.google.com/spreadsheets/d/1Mv-yCw7REy4yKsge1xibF0P2NS7lr6C472pqPqibDG4/edit" 
             target="_blank" 
             rel="noopener noreferrer"
             className="btn"

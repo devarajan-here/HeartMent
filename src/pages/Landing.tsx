@@ -83,8 +83,12 @@ const Landing = () => {
           </motion.p>
           
           <motion.div variants={itemVariants} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <button onClick={() => navigate('/app')} className="btn" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>
-              <Heart size={20} />
+            <button 
+              onClick={() => navigate('/app')} 
+              className="btn btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}
+            >
+              <Heart size={20} fill="currentColor" />
               Start Your Journey
             </button>
             <button onClick={() => navigate('/admin')} className="btn btn-secondary" style={{ padding: '1rem 2rem', fontSize: '1.1rem' }}>

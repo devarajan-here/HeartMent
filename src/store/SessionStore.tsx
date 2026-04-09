@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { SessionData, Message, User } from '../types';
+import { logToSheet } from '../lib/sheetLogger';
 
 interface SessionContextType {
   currentUser: User | null;
@@ -56,6 +57,21 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
       createdAt: Date.now() 
     };
     setSessions(prev => [newSession, ...prev]);
+
+    // Log the session start/intake directly to Google Sheets
+    logToSheet({
+      type: 'session_start',
+      patientName: newSession.userName || "Unknown",
+      partnerName: newSession.partnerName || "-",
+      duration: newSession.duration || "-",
+      whoEnded: newSession.whoEnded || "-",
+      story: newSession.story || "-",
+      feeling: newSession.feeling || "-",
+      mode: newSession.mode || "-",
+      language: newSession.language || "English",
+      sessionId: id
+    });
+
     return id;
   };
 
@@ -70,6 +86,17 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     const newMessage: Message = { ...messageData, id, timestamp };
     
     setMessages(prev => [...prev, newMessage]);
+
+    // Log the message directly to Google Sheets
+    const session = sessions.find(s => s.id === messageData.sessionId);
+    logToSheet({
+      type: 'message',
+      patientName: session?.userName || "Unknown",
+      partnerName: session?.partnerName || "-",
+      sessionId: messageData.sessionId,
+      sender: messageData.role === 'user' ? 'Patient' : 'HeartMend AI',
+      message: messageData.content
+    });
 
     if (newMessage.role === 'user') {
       try {
