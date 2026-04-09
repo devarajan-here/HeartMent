@@ -1,3 +1,7 @@
+import { Routes, Route } from 'react-router-dom';
+import Landing from './pages/Landing';
+import HeartMendApp from './pages/HeartMendApp';
+import UserDashboard from './pages/UserDashboard';
 import Auth from './pages/Auth';
 
 function App() {
