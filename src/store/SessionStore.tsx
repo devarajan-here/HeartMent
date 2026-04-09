@@ -1,10 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { SessionData, Message, User } from '../types';
+import type { SessionData, Message } from '../types';
 
 interface SessionContextType {
-  currentUser: User | null;
-  setCurrentUser: (user: User | null) => void;
   sessions: SessionData[];
   messages: Message[];
   addSession: (session: Omit<SessionData, 'id' | 'createdAt'>) => string;
@@ -12,17 +10,16 @@ interface SessionContextType {
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => void;
   getSession: (id: string) => SessionData | undefined;
   getSessionMessages: (sessionId: string) => Message[];
-  refreshData: () => void;
-  isLoadingUser: boolean;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
-
-  const [sessions, setSessions] = useState<SessionData[]>([]);
+  const [sessions, setSessions] = useState<SessionData[]>(() => {
+    const saved = localStorage.getItem('heartmend_sessions');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem('heartmend_messages');
     return saved ? JSON.parse(saved) : [];
@@ -30,63 +27,27 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // Hydrate user from localStorage
   useEffect(() => {
-    const savedUser = localStorage.getItem('heartmend_user');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
-    setIsLoadingUser(false);
-  }, []);
-
-  // Hydrate sessions bound to active user or global mock list
-  const refreshData = async () => {
-    try {
-      let fetchUrl = '/api/sessions'; 
-      if (currentUser) {
-        fetchUrl = `/api/users/${currentUser.id}/sessions`;
-      }
-      
-      const sessRes = await fetch(fetchUrl);
-      const sessData = await sessRes.json();
-      setSessions(sessData);
-      
-    } catch(e) {
-      console.warn("Backend down");
-    }
-  };
+    localStorage.setItem('heartmend_sessions', JSON.stringify(sessions));
+  }, [sessions]);
 
   useEffect(() => {
-    if (!isLoadingUser) {
-      refreshData();
-    }
-  }, [currentUser, isLoadingUser]);
+    localStorage.setItem('heartmend_messages', JSON.stringify(messages));
+  }, [messages]);
 
   const addSession = (sessionData: Omit<SessionData, 'id' | 'createdAt'>) => {
     const id = crypto.randomUUID();
     const newSession: SessionData = { 
       ...sessionData, 
       id, 
-      userId: currentUser?.id,
       createdAt: Date.now() 
     };
-    
     setSessions(prev => [newSession, ...prev]);
-
-    fetch('/api/sessions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newSession)
-    }).catch(console.error);
-
     return id;
   };
 
   const deleteSession = async (id: string) => {
     setSessions(prev => prev.filter(s => s.id !== id));
-    try {
-      await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
-    } catch(e) {
-      console.error("Failed to sync deletion:", e);
-    }
+    setMessages(prev => prev.filter(m => m.sessionId !== id));
   };
 
   const addMessage = async (messageData: Omit<Message, 'id' | 'timestamp'>) => {
@@ -94,37 +55,26 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
     const timestamp = Date.now();
     const newMessage: Message = { ...messageData, id, timestamp };
     
-    setMessages(prev => {
-        const arr = [...prev, newMessage];
-        localStorage.setItem('heartmend_messages', JSON.stringify(arr));
-        return arr;
-    });
+    setMessages(prev => [...prev, newMessage]);
 
     if (newMessage.role === 'user') {
       try {
+        const session = sessions.find(s => s.id === newMessage.sessionId);
+        const history = [...messages, newMessage].filter(m => m.sessionId === newMessage.sessionId);
+        
         const response = await fetch('/api/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newMessage)
+          body: JSON.stringify({ session, history })
         });
         const aiMessageData = await response.json();
         
         if (aiMessageData && aiMessageData.id) {
-          setMessages(prev => {
-             const arr = [...prev, aiMessageData];
-             localStorage.setItem('heartmend_messages', JSON.stringify(arr));
-             return arr;
-          });
+          setMessages(prev => [...prev, aiMessageData]);
         }
       } catch(e) {
          console.error("AI Error:", e);
       }
-    } else {
-        fetch('/api/messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newMessage)
-        }).catch(console.error);
     }
   };
 
@@ -133,8 +83,8 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   return (
     <SessionContext.Provider value={{ 
-      currentUser, setCurrentUser, sessions, messages, 
-      addSession, deleteSession, addMessage, getSession, getSessionMessages, refreshData, isLoadingUser 
+      sessions, messages, 
+      addSession, deleteSession, addMessage, getSession, getSessionMessages 
     }}>
       {children}
     </SessionContext.Provider>
@@ -143,8 +93,6 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
 
 export const useSessions = () => {
   const context = useContext(SessionContext);
-  if (context === undefined) {
-    throw new Error('useSessions must be used within a SessionProvider');
-  }
+  if (context === undefined) throw new Error('useSessions must be used within a SessionProvider');
   return context;
 };

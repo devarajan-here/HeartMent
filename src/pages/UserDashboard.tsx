@@ -2,30 +2,16 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useSessions } from '../store/SessionStore';
-import { Heart, MessageCircle, LogOut, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Trash2 } from 'lucide-react';
 
 const UserDashboard = () => {
-  const { currentUser, sessions, setCurrentUser, deleteSession } = useSessions();
+  const { sessions, deleteSession } = useSessions();
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem('heartmend_user');
-    setCurrentUser(null);
-    navigate('/');
-  };
-
-  if (!currentUser) {
-    navigate('/login');
-    return null;
-  }
 
   return (
     <div className="container" style={{ padding: '4rem 2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4rem' }}>
-        <h1 style={{ margin: 0 }}>Welcome, {currentUser.username}</h1>
-        <button onClick={handleLogout} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <LogOut size={16} /> Logout
-        </button>
+        <h1 style={{ margin: 0 }}>My Sessions</h1>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>

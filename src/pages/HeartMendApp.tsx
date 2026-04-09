@@ -6,16 +6,10 @@ import type { Mode } from '../types';
 import { Send, User, Heart } from 'lucide-react';
 
 const HeartMendApp = () => {
-  const { currentUser, addSession, addMessage, getSessionMessages } = useSessions();
+  const { addSession, addMessage, getSessionMessages } = useSessions();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!currentUser) {
-       navigate('/login');
-    }
-  }, [currentUser, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -50,7 +44,7 @@ const HeartMendApp = () => {
     addMessage({
       sessionId,
       role: 'assistant',
-      content: `Hi ${currentUser?.username || 'friend'}. Look, I heard what happened with ${partnerName}. It seriously sucks that you're feeling ${feeling} after ${duration} together. But honestly, my creator (the boss) built me because he went through a completely miserable heartbreak of his own... so I literally exist for this exact moment. Grab a seat, let's talk about it.`
+      content: `Hi friend. Look, I heard what happened with ${partnerName}. It seriously sucks that you're feeling ${feeling} after ${duration} together. But honestly, my creator (the boss) built me because he went through a completely miserable heartbreak of his own... so I literally exist for this exact moment. Grab a seat, let's talk about it.`
     });
   };
 

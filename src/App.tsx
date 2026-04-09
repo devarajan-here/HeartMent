@@ -1,21 +1,20 @@
-import { Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
 import HeartMendApp from './pages/HeartMendApp';
-import Admin from './pages/Admin';
-import Auth from './pages/Auth';
 import UserDashboard from './pages/UserDashboard';
+import { SessionProvider } from './store/SessionStore';
 
 function App() {
   return (
-    <div className="app-container">
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Auth />} />
-        <Route path="/dashboard" element={<UserDashboard />} />
-        <Route path="/app" element={<HeartMendApp />} />
-        <Route path="/admin" element={<Admin />} />
-      </Routes>
-    </div>
+    <SessionProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/dashboard" element={<UserDashboard />} />
+          <Route path="/chat" element={<HeartMendApp />} />
+        </Routes>
+      </Router>
+    </SessionProvider>
   );
 }
 
