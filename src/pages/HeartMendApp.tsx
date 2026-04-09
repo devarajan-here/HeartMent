@@ -40,19 +40,33 @@ const HeartMendApp = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const startSession = (e: React.FormEvent) => {
+  const startSession = async (e: React.FormEvent) => {
     e.preventDefault();
-    const sessionId = addSession({
-      partnerName, duration, whoEnded, story, feeling, need: 'Support', mode, language, userName
-    });
+    const sessionData = { partnerName, duration, whoEnded, story, feeling, need: 'Support', mode, language, userName };
+    const sessionId = addSession(sessionData);
     setActiveSessionId(sessionId);
-    
-    // Send initial greeting based on intake
-    addMessage({
-      sessionId,
-      role: 'assistant',
-      content: `Hi ${userName || 'friend'}. Look, I heard what happened with ${partnerName}. It seriously sucks that you're feeling ${feeling} after ${duration} together. But honestly, my creator (the boss) built me because he went through a completely miserable heartbreak of his own... so I literally exist for this exact moment. Grab a seat, let's talk about it.`
-    });
+    setIsTyping(true);
+
+    // Trigger the AI to generate the FIRST greeting in the correct language
+    try {
+      const triggerHistory = [{
+        role: 'user',
+        content: `My name is ${userName || 'friend'}. Just broke up with ${partnerName} after ${duration}. Feeling ${feeling}. ${whoEnded}. Just start the conversation naturally, greet me warmly in the selected language.`
+      }];
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session: { ...sessionData, id: sessionId }, history: triggerHistory })
+      });
+      const aiMsg = await response.json();
+      if (aiMsg && aiMsg.id) {
+        // Add the AI greeting directly without showing the trigger user message
+        addMessage({ sessionId, role: 'assistant', content: aiMsg.content });
+      }
+    } catch {
+      addMessage({ sessionId, role: 'assistant', content: `Hi ${userName || 'friend'}. I'm here for you.` });
+    }
+    setIsTyping(false);
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
