@@ -144,7 +144,21 @@ Your current mode is: ${session.mode}`;
 
 if (process.env.NODE_ENV !== 'production') {
    const PORT = process.env.PORT || 3000;
-   app.listen(PORT, () => console.log(`Local AI Proxy Server running on port ${PORT}`));
+   app.listen(PORT, () => {
+     console.log(`Local AI Proxy Server running on port ${PORT}`);
+     
+     // Auto-initialize the Google Sheet headers on startup
+     const webhookUrl = process.env.SHEETS_WEBHOOK_URL;
+     if (webhookUrl) {
+       fetch(webhookUrl, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ type: 'init' })
+       })
+       .then(() => console.log('Google Sheet headers initialized successfully!'))
+       .catch(e => console.error('Sheet init failed:', e));
+     }
+   });
 }
 
 export default app;
