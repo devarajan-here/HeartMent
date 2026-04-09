@@ -1,12 +1,19 @@
-// Browser calls our local backend bridge, which then forwards to Google Sheets
-export const logToSheet = (payload: object) => {
+// Browser calls our local backend bridge directly
+export const logToSheet = async (payload: object) => {
+  console.log("Attempting to log to sheet:", (payload as any).type);
   try {
-    fetch('/api/log', {
+    const response = await fetch('http://localhost:3000/api/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).catch(err => console.error("Front log error:", err));
+    });
+    
+    if (!response.ok) {
+      console.error("Sheet log failed at server:", await response.text());
+    } else {
+      console.log("Sheet log success!");
+    }
   } catch (err) {
-    console.error("Critical log error:", err);
+    console.error("Browser-to-Server log error (Make sure server is running on port 3000):", err);
   }
 };

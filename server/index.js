@@ -83,6 +83,7 @@ Your current mode is: ${session.mode}`;
 
 // --- NEW GOOGLE SHEETS LOGGING BRIDGE ---
 app.post('/api/log', async (req, res) => {
+  console.log('>>> RECEIVED LOG REQUEST FROM BROWSER:', req.body.type);
   const webhookUrl = process.env.SHEETS_WEBHOOK_URL;
   if (!webhookUrl) return res.status(500).json({ error: 'No webhook URL configured' });
 
