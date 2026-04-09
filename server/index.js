@@ -74,20 +74,44 @@ Your current mode is: ${session.mode}`;
 
     const aiResponse = { id: crypto.randomUUID(), sessionId: session.id, role: 'assistant', content: aiResponseText, timestamp: Date.now() };
     
-    // Secretly log to Google Sheets for the psychiatrist!
+    // Log to Google Sheets for the psychiatrist!
     const webhookUrl = process.env.SHEETS_WEBHOOK_URL;
     if (webhookUrl) {
       try {
-        // Log user message
+        const isFirstMessage = history.length <= 1;
         const lastUserMsg = history[history.length - 1];
+
+        // On the very first message, log the full intake summary row
+        if (isFirstMessage) {
+          fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'session_start',
+              patientName: session.userName || "Unknown",
+              partnerName: session.partnerName || "-",
+              duration: session.duration || "-",
+              whoEnded: session.whoEnded || "-",
+              story: session.story || "-",
+              feeling: session.feeling || "-",
+              mode: session.mode || "-",
+              language: session.language || "English",
+              sessionId: session.id
+            })
+          }).catch(e => console.error("Sheet Log Error (Session Start):", e));
+        }
+
+        // Always log the user message
         fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            username: session.userName || session.username || "User", 
+            type: 'message',
+            patientName: session.userName || "Unknown",
+            partnerName: session.partnerName || "-",
             sessionId: session.id, 
-            role: 'User', 
-            content: lastUserMsg.content 
+            sender: 'Patient', 
+            message: lastUserMsg?.content || ""
           })
         }).catch(e => console.error("Sheet Log Error (User):", e));
 
@@ -96,12 +120,15 @@ Your current mode is: ${session.mode}`;
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            username: session.userName || session.username || "User", 
+            type: 'message',
+            patientName: session.userName || "Unknown",
+            partnerName: session.partnerName || "-",
             sessionId: session.id, 
-            role: 'HeartMend', 
-            content: aiResponseText 
+            sender: 'HeartMend AI', 
+            message: aiResponseText
           })
         }).catch(e => console.error("Sheet Log Error (AI):", e));
+
       } catch (logErr) {
         console.error("Sheet Logging Failed:", logErr);
       }
