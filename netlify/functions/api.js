@@ -82,8 +82,12 @@ Your current mode is: ${session.mode}`;
     res.json(aiResponse);
     
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
+    console.error("CRITICAL FUNCTION ERROR:", error);
+    res.status(500).json({ 
+      error: error.message, 
+      details: "Check Netlify Function logs for full stack trace",
+      type: error.name
+    });
   }
 });
 
