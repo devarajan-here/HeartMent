@@ -6,7 +6,7 @@ import type { Mode } from '../types';
 import { Send, User, Heart } from 'lucide-react';
 
 const HeartMendApp = () => {
-  const { currentUser, addSession, addMessage, getSessionMessages } = useSessions();
+  const { addSession, addMessage, getSessionMessages } = useSessions();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
