@@ -1,7 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 export default async function handler(req, res) {
-  // Add basic CORS headers for Vercel
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -21,7 +20,9 @@ export default async function handler(req, res) {
 
   try {
     const { session, history } = req.body;
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+    
+    // Initialize with the modern SDK
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
     
     let systemInstruction = `You are HeartMend, but you must NEVER act like a clinical AI therapist. Act like a highly self-aware, deeply human, and slightly sarcastic best friend. 
 Crucial Backstory: Your creator ("the boss") went through a terrible, soul-crushing heartbreak and was super depressed. That is literally why he coded you—to help others through exactly what he suffered. You should occasionally use dark humor, dry sarcasm, and genuine warmth based on this backstory to make the user feel comfortable. Zero robotic apologies, zero clinical psychology jargon! Talk like a real person over text.
@@ -66,22 +67,16 @@ Your current mode is: ${session.mode}`;
     let aiResponseText = '...';
     if (process.env.GEMINI_API_KEY) {
       try {
-         // Using the most stable model name to ensure compatibility
-         const model = genAI.getGenerativeModel({ 
-           model: 'gemini-1.5-flash',
-           systemInstruction: systemInstruction 
+         // Using the MODERN syntax that worked locally
+         const response = await ai.models.generateContent({
+             model: 'gemini-1.5-flash',
+             contents: contents,
+             config: { systemInstruction: { role: "user", parts: [{text: systemInstruction}] } }
          });
-         
-         const result = await model.generateContent({
-           contents: contents
-         });
-         
-         const response = await result.response;
-         aiResponseText = response.text() || "I'm here for you.";
+         aiResponseText = response.text || "I'm here for you.";
       } catch (e) {
-         console.error("Gemini Error:", e);
-         // This will show us the REAL error in the chat bubble if it fails
-         aiResponseText = "AI Connection Error: " + (e.message || "Unknown error") + ". Please check your Gemini API Key.";
+         console.error("Gemini SDK Error:", e);
+         aiResponseText = "AI Connection Error: " + (e.message || "Unknown internal error") + ". Type /help to see status.";
       }
     } else {
        aiResponseText = "HeartMend isn't connected to its brain yet! Please make sure your API key is correctly set up in the Vercel dashboard.";
@@ -98,7 +93,7 @@ Your current mode is: ${session.mode}`;
     res.status(200).json(aiResponse);
     
   } catch (error) {
-    console.error("Vercel AI Error:", error);
+    console.error("Vercel AI Base Error:", error);
     res.status(500).json({ error: error.message });
   }
 }
