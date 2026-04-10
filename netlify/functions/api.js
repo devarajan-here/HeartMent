@@ -1,14 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import serverless from 'serverless-http';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialize with zero-config to allow Netlify AI Gateway to inject the proper Base URL and API Key
-const ai = new GoogleGenAI({});
+// Initialize the official SDK
+// Note: We leave it empty to allow Netlify AI Gateway to inject keys,
+// OR it will find process.env.GEMINI_API_KEY naturally.
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 app.post('/api/messages', async (req, res) => {
   try {
@@ -57,13 +59,17 @@ Your current mode is: ${session.mode}`;
     let aiResponseText = '...';
     if (process.env.GEMINI_API_KEY) {
       try {
-         // Using the exact syntax that worked locally
-         const response = await ai.models.generateContent({
-             model: 'gemini-flash-lite-latest',
-             contents: contents,
-             config: { systemInstruction: { role: "user", parts: [{text: systemInstruction}] } }
+         const model = genAI.getGenerativeModel({ 
+           model: 'gemini-1.5-flash-latest',
+           systemInstruction: systemInstruction 
          });
-         aiResponseText = response.text || "I'm here for you.";
+         
+         const result = await model.generateContent({
+           contents: contents
+         });
+         
+         const response = await result.response;
+         aiResponseText = response.text() || "I'm here for you.";
       } catch (e) {
          console.error("Gemini Error:", e);
          aiResponseText = "I hear you, and it's okay to feel this way. Please take a deep breath.";

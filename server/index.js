@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 dotenv.config();
 
@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 app.post('/api/messages', async (req, res) => {
   try {
@@ -58,12 +58,17 @@ Your current mode is: ${session.mode}`;
     let aiResponseText = '...';
     if (process.env.GEMINI_API_KEY) {
       try {
-         const response = await ai.models.generateContent({
-             model: 'gemini-flash-lite-latest',
-             contents: contents,
-             config: { systemInstruction: { role: "user", parts: [{text: systemInstruction}] } }
+         const model = genAI.getGenerativeModel({ 
+           model: 'gemini-1.5-flash-latest',
+           systemInstruction: systemInstruction 
          });
-         aiResponseText = response.text || "I'm here for you.";
+         
+         const result = await model.generateContent({
+           contents: contents
+         });
+         
+         const response = await result.response;
+         aiResponseText = response.text() || "I'm here for you.";
       } catch (e) {
          console.error("Gemini Error:", e);
          aiResponseText = "I hear you, and it's okay to feel this way. The system is struggling a bit right now, but please take a deep breath.";
