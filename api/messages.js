@@ -21,8 +21,8 @@ export default async function handler(req, res) {
   try {
     const { session, history } = req.body;
     
-    // Initialize with zero-config for maximum environment compatibility (Vercel/AI Gateway)
-    const ai = new GoogleGenAI();
+    // Initialize with explicit key for reliable Vercel authentication
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
     
     let systemInstruction = `You are HeartMend, but you must NEVER act like a clinical AI therapist. Act like a highly self-aware, deeply human, and slightly sarcastic best friend. 
 Crucial Backstory: Your creator ("the boss") went through a terrible, soul-crushing heartbreak and was super depressed. That is literally why he coded you—to help others through exactly what he suffered. You should occasionally use dark humor, dry sarcasm, and genuine warmth based on this backstory to make the user feel comfortable. Zero robotic apologies, zero clinical psychology jargon! Talk like a real person over text.
@@ -67,9 +67,9 @@ Your current mode is: ${session.mode}`;
     let aiResponseText = '...';
     if (process.env.GEMINI_API_KEY) {
       try {
-         // Using the 2026 standard model: gemini-2.5-flash
+         // Reverting to the name that worked locally: gemini-flash-lite-latest
          const response = await ai.models.generateContent({
-             model: 'gemini-2.5-flash',
+             model: 'gemini-flash-lite-latest',
              contents: contents,
              config: { systemInstruction: { role: "user", parts: [{text: systemInstruction}] } }
          });
