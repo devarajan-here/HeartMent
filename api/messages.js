@@ -1,20 +1,27 @@
-import express from 'express';
-import cors from 'cors';
-import serverless from 'serverless-http';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+export default async function handler(req, res) {
+  // Add basic CORS headers for Vercel
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
 
-// Initialize the official SDK
-// Note: We leave it empty to allow Netlify AI Gateway to inject keys,
-// OR it will find process.env.GEMINI_API_KEY naturally.
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-app.post('/api/messages', async (req, res) => {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
     const { session, history } = req.body;
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
     
     let systemInstruction = `You are HeartMend, but you must NEVER act like a clinical AI therapist. Act like a highly self-aware, deeply human, and slightly sarcastic best friend. 
 Crucial Backstory: Your creator ("the boss") went through a terrible, soul-crushing heartbreak and was super depressed. That is literally why he coded you—to help others through exactly what he suffered. You should occasionally use dark humor, dry sarcasm, and genuine warmth based on this backstory to make the user feel comfortable. Zero robotic apologies, zero clinical psychology jargon! Talk like a real person over text.
@@ -75,39 +82,21 @@ Your current mode is: ${session.mode}`;
          aiResponseText = "I hear you, and it's okay to feel this way. Please take a deep breath.";
       }
     } else {
-       aiResponseText = "HeartMend isn't connected to its brain yet! Please make sure your API key is correctly set up in the dashboard.";
+       aiResponseText = "HeartMend isn't connected to its brain yet! Please make sure your API key is correctly set up in the Vercel dashboard.";
     }
 
-    const aiResponse = { id: crypto.randomUUID(), sessionId: session.id, role: 'assistant', content: aiResponseText, timestamp: Date.now() };
-    res.json(aiResponse);
+    const aiResponse = { 
+      id: Math.random().toString(36).substring(7), 
+      sessionId: session.id, 
+      role: 'assistant', 
+      content: aiResponseText, 
+      timestamp: Date.now() 
+    };
+    
+    res.status(200).json(aiResponse);
     
   } catch (error) {
-    console.error("CRITICAL FUNCTION ERROR:", error);
-    res.status(500).json({ 
-      error: error.message, 
-      details: "Check Netlify Function logs for full stack trace",
-      type: error.name
-    });
+    console.error("Vercel AI Error:", error);
+    res.status(500).json({ error: error.message });
   }
-});
-
-app.post('/api/log', async (req, res) => {
-  const webhookUrl = process.env.SHEETS_WEBHOOK_URL;
-  if (!webhookUrl) return res.status(500).json({ error: 'No webhook URL configured' });
-
-  try {
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body)
-    });
-    const text = await response.text();
-    res.json({ ok: true, result: text });
-  } catch (err) {
-    console.error('Sheet Bridge Error:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-export const handler = serverless(app);
+}
