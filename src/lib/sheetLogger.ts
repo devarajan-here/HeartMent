@@ -2,7 +2,7 @@
 export const logToSheet = async (payload: object) => {
   console.log("Attempting to log to sheet:", (payload as any).type);
   try {
-    const response = await fetch('http://localhost:3000/api/log', {
+    const response = await fetch('/api/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

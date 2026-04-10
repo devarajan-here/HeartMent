@@ -112,6 +112,16 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
         
         if (aiMessageData && aiMessageData.id) {
           setMessages(prev => [...prev, aiMessageData]);
+          
+          // Log the AI response as well!
+          logToSheet({
+            type: 'message',
+            patientName: session?.userName || "Unknown",
+            partnerName: session?.partnerName || "-",
+            sessionId: messageData.sessionId,
+            sender: 'HeartMend AI',
+            message: aiMessageData.content
+          });
         }
       } catch(e) {
          console.error("AI Error:", e);
