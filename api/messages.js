@@ -66,8 +66,9 @@ Your current mode is: ${session.mode}`;
     let aiResponseText = '...';
     if (process.env.GEMINI_API_KEY) {
       try {
+         // Using the most stable model name to ensure compatibility
          const model = genAI.getGenerativeModel({ 
-           model: 'gemini-1.5-flash-latest',
+           model: 'gemini-1.5-flash',
            systemInstruction: systemInstruction 
          });
          
@@ -79,7 +80,8 @@ Your current mode is: ${session.mode}`;
          aiResponseText = response.text() || "I'm here for you.";
       } catch (e) {
          console.error("Gemini Error:", e);
-         aiResponseText = "I hear you, and it's okay to feel this way. Please take a deep breath.";
+         // This will show us the REAL error in the chat bubble if it fails
+         aiResponseText = "AI Connection Error: " + (e.message || "Unknown error") + ". Please check your Gemini API Key.";
       }
     } else {
        aiResponseText = "HeartMend isn't connected to its brain yet! Please make sure your API key is correctly set up in the Vercel dashboard.";
