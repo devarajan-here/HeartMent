@@ -38,7 +38,7 @@ const UserDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="glass-panel" 
           style={{ cursor: 'pointer', border: '2px dashed var(--accent-color)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 2rem' }}
-          onClick={() => navigate('/app')}
+          onClick={() => navigate('/app?new=1')}
         >
           <Heart size={48} color="var(--accent-color)" style={{ marginBottom: '1rem' }} />
           <h3 style={{ margin: 0, textAlign: 'center' }}>Start New Session</h3>

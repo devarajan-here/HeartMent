@@ -5,9 +5,34 @@ import { useSessions } from '../store/SessionStore';
 import type { Mode } from '../types';
 import { Send, User, Heart } from 'lucide-react';
 
+const ACTIVE_SESSION_KEY = 'heartmend_active_session';
+const INTAKE_DRAFT_KEY = 'heartmend_intake_draft';
+
+type IntakeDraft = {
+  userName?: string;
+  partnerName?: string;
+  duration?: string;
+  whoEnded?: string;
+  story?: string;
+  feeling?: string;
+  mode?: Mode;
+  language?: string;
+};
+
+const getSavedValue = <T,>(key: string, fallback: T): T => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 const HeartMendApp = () => {
-  const { addSession, addMessage, getSessionMessages } = useSessions();
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const { addSession, addMessage, getSession, getSessionMessages } = useSessions();
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
+    return getSavedValue<string | null>(ACTIVE_SESSION_KEY, null);
+  });
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -16,31 +41,64 @@ const HeartMendApp = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const sessionParam = params.get('session');
+    const newSession = params.get('new') === '1';
+    if (newSession) {
+      setActiveSessionId(null);
+      localStorage.removeItem(ACTIVE_SESSION_KEY);
+      return;
+    }
     if (sessionParam) {
       setActiveSessionId(sessionParam);
     }
   }, [location.search]);
+
+  useEffect(() => {
+    if (!activeSessionId) {
+      localStorage.removeItem(ACTIVE_SESSION_KEY);
+      return;
+    }
+
+    localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(activeSessionId));
+  }, [activeSessionId]);
   
   // Form state
-  const [userName, setUserName] = useState('');
-  const [partnerName, setPartnerName] = useState('');
-  const [duration, setDuration] = useState('');
-  const [whoEnded, setWhoEnded] = useState('We mutually agreed');
-  const [story, setStory] = useState('');
-  const [feeling, setFeeling] = useState('');
-  const [mode, setMode] = useState<Mode>('CALM DOWN');
-  const [language, setLanguage] = useState('Malayalam (Manglish requested)');
+  const savedDraft = getSavedValue<IntakeDraft>(INTAKE_DRAFT_KEY, {});
+  const [userName, setUserName] = useState(savedDraft.userName ?? '');
+  const [partnerName, setPartnerName] = useState(savedDraft.partnerName ?? '');
+  const [duration, setDuration] = useState(savedDraft.duration ?? '');
+  const [whoEnded, setWhoEnded] = useState(savedDraft.whoEnded ?? 'We mutually agreed');
+  const [story, setStory] = useState(savedDraft.story ?? '');
+  const [feeling, setFeeling] = useState(savedDraft.feeling ?? '');
+  const [mode, setMode] = useState<Mode>(savedDraft.mode ?? 'CALM DOWN');
+  const [language, setLanguage] = useState(savedDraft.language ?? 'Malayalam (Manglish requested)');
 
   // Chat state
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (activeSessionId) return;
+
+    localStorage.setItem(INTAKE_DRAFT_KEY, JSON.stringify({
+      userName,
+      partnerName,
+      duration,
+      whoEnded,
+      story,
+      feeling,
+      mode,
+      language
+    }));
+  }, [activeSessionId, userName, partnerName, duration, whoEnded, story, feeling, mode, language]);
+
   const startSession = async (e: React.FormEvent) => {
     e.preventDefault();
     const sessionData = { partnerName, duration, whoEnded, story, feeling, need: 'Support', mode, language, userName };
     const sessionId = addSession(sessionData);
     setActiveSessionId(sessionId);
+    localStorage.removeItem(INTAKE_DRAFT_KEY);
+    navigate(`/app?session=${sessionId}`, { replace: true });
     setIsTyping(true);
 
     // Trigger the AI to generate the FIRST greeting in the correct language
@@ -82,7 +140,15 @@ const HeartMendApp = () => {
     setIsTyping(false);
   };
 
+  const activeSession = activeSessionId ? getSession(activeSessionId) : undefined;
   const messages = activeSessionId ? getSessionMessages(activeSessionId) : [];
+
+  useEffect(() => {
+    if (activeSessionId && !activeSession) {
+      setActiveSessionId(null);
+      localStorage.removeItem(ACTIVE_SESSION_KEY);
+    }
+  }, [activeSession, activeSessionId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -153,9 +219,9 @@ const HeartMendApp = () => {
         <div style={{ paddingBottom: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>HeartMend</h3>
-            <span style={{ fontSize: '0.8rem', color: 'var(--accent-color)' }}>Current Mode: {mode}</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--accent-color)' }}>Current Mode: {activeSession?.mode ?? mode}</span>
           </div>
-          <button onClick={() => navigate('/')} className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>Exit Session</button>
+          <button onClick={() => { setActiveSessionId(null); navigate('/'); }} className="btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>Exit Session</button>
         </div>
 
         {/* Chat Area */}
