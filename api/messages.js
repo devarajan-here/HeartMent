@@ -1,5 +1,13 @@
 import { GoogleGenAI } from '@google/genai';
 
+const getFallbackMessage = (session = {}) => {
+  if (session.language && session.language.includes('Malayalam')) {
+    return "Ippo AI side kurachu busy aanu. Pakshe njan ivide thanne undu.\n\nNee paranjathu njan kelkkunnu. Onnu slow aayi breathe cheyyu, ennittu entha ippo ettavum heavy aayi thonnunnathu?";
+  }
+
+  return "I'm here with you. The AI side is a little overloaded right now, but your message is still safe here.\n\nTell me what feels heaviest in this moment.";
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -76,10 +84,10 @@ Your current mode is: ${session.mode}`;
          aiResponseText = response.text || "I'm here for you.";
       } catch (e) {
          console.error("Gemini SDK Error:", e);
-         aiResponseText = "AI Connection Error: " + (e.message || "Unknown internal error") + ". Type /help to see status.";
+         aiResponseText = getFallbackMessage(session);
       }
     } else {
-       aiResponseText = "HeartMend isn't connected to its brain yet! Please make sure your API key is correctly set up in the Vercel dashboard.";
+       aiResponseText = getFallbackMessage(session);
     }
 
     const aiResponse = { 

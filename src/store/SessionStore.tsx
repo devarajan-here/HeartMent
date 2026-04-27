@@ -17,6 +17,17 @@ interface SessionContextType {
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
+const cleanMessageContent = (message: Message): Message => {
+  if (message.role === 'assistant' && message.content.startsWith('AI Connection Error:')) {
+    return {
+      ...message,
+      content: "I'm here with you. The AI side was overloaded for a moment, but your conversation is still here.\n\nTell me what feels heaviest right now."
+    };
+  }
+
+  return message;
+};
+
 export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('heartmend_user');
@@ -30,7 +41,7 @@ export const SessionProvider: React.FC<{ children: ReactNode }> = ({ children })
   
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem('heartmend_messages');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved).map(cleanMessageContent) : [];
   });
 
   useEffect(() => {
